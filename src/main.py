@@ -1,7 +1,7 @@
 from machine import Pin
 import time
 
-pino_dados = Pin(4, Pin.IN)
+pino_dados = Pin(4, Pin.IN, Pin.PULL_DOWN)
 pino_clock = Pin(5, Pin.OUT)
 
 # Etapa 1
