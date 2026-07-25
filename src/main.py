@@ -12,7 +12,7 @@ def ler_sensor_bruto():
     for _ in range(24):
         pino_clock.value(1)
         time.sleep_us(1)
-        bit = pino_dados.value
+        bit = pino_dados.value()
         valor = (valor<<1) | bit
         pino_clock.value(0)
         time.sleep_us(2)
