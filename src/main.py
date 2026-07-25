@@ -13,8 +13,10 @@ def ler_sensor_bruto():
         pino_clock.value(1)
         valor = (valor<<1) | pino_dados.value()
         pino_clock.value(0)
+        time.sleep_us(2)
 
     pino_clock.value(1)
+    time.sleep_us(2)
     pino_clock.value(0)
 
     if valor & 0x800000:
