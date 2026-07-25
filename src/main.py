@@ -8,14 +8,14 @@ pino_clock = Pin(5, Pin.OUT)
 def ler_sensor_bruto():
     while pino_dados.value() == 1:
         pass
+
     valor = 0
     for _ in range(24):
         pino_clock.value(1)
         time.sleep_us(1)
-        bit = pino_dados.value()
-        valor = (valor<<1) | bit
         pino_clock.value(0)
-        time.sleep_us(2)
+        time.sleep_us(1)
+        valor = (valor << 1) | pino_dados.value()
 
     pino_clock.value(1)
     time.sleep_us(1)
@@ -26,7 +26,7 @@ def ler_sensor_bruto():
         valor -= 0x1000000
 
     return valor
-
+    
 # Etapa 2
 def ler_peso_gramas():
     for _ in range(15):
