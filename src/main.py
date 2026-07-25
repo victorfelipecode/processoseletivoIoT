@@ -60,7 +60,7 @@ while True:
         if estado_novo == "anomalia":
             print("ALERTA: Caixa ausente ou erro de calibração no sensor HX711!")
         elif estado_novo == "vazio":
-            print("Evento de reposição disparado! Caixa vaiza detectada.")
+            print("Evento de reposição disparado! Caixa vazia detectada.")
         elif estado_novo == "cheio":
             print("Abastecimento concluído. Caixa cheia.")
         else:
