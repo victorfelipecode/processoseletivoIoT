@@ -26,26 +26,29 @@ def ler_sensor_bruto():
         valor -= 0x1000000
 
     return valor
-    
+
 # Etapa 2
 def ler_peso_gramas():
-    for _ in range(15):
-        leitura1 = ler_sensor_bruto()
-        leitura2 = ler_sensor_bruto()
-        if abs(leitura1 - leitura2) < 30:
-            bruto = leitura2
-            break
-    else:
-        bruto = leitura2
+    leituras = []
+    for _ in range(7):
+        v = ler_sensor_bruto()
+        if 0 <= v <= 2200:
+            leituras.append(v)
 
-    gramas = (bruto / 2100) * 5000
-    return gramas
+    if not leituras:
+        return 0
+
+    leituras.sort()
+    bruto = leituras[len(leituras) // 2]
+    return (bruto / 2100) * 5000
 
 # 2.1
 limite_vazio = 200
 limite_cheio = 4500
 
 estado_atual = "regular"
+estado_pendente = "regular"
+contador_confirmacao = 0
 
 print("Sistema Kanban Inicializado")
 
@@ -55,19 +58,20 @@ while True:
 
     if peso <= 50:
         estado_novo = "anomalia"
-
     elif peso < limite_vazio:
         estado_novo = "vazio"
-
     elif peso > limite_cheio:
         estado_novo = "cheio"
-
     else:
         estado_novo = "regular"
 
-    time.sleep(0.1)
+    if estado_novo == estado_pendente:
+        contador_confirmacao += 1
+    else:
+        estado_pendente = estado_novo
+        contador_confirmacao = 1
 
-    if estado_novo != estado_atual:
+    if contador_confirmacao >= 3 and estado_novo != estado_atual:
         if estado_novo == "anomalia":
             print("ALERTA: Caixa ausente ou erro de calibração no sensor HX711!")
         elif estado_novo == "vazio":
@@ -78,3 +82,5 @@ while True:
             print(f"Status: Estoque Regular ({int(peso)}g)")
 
         estado_atual = estado_novo
+
+    time.sleep(0.05)
