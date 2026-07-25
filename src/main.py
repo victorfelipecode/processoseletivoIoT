@@ -29,8 +29,16 @@ def ler_sensor_bruto():
 
 # Etapa 2
 def ler_peso_gramas():
-    peso_bruto = ler_sensor_bruto()
-    gramas = (peso_bruto/2100) * 5000
+    for _ in range(15):
+        leitura1 = ler_sensor_bruto()
+        leitura2 = ler_sensor_bruto()
+        if abs(leitura1 - leitura2) < 30:
+            bruto = leitura2
+            break
+    else:
+        bruto = leitura2
+
+    gramas = (bruto / 2100) * 5000
     return gramas
 
 # 2.1
