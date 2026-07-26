@@ -1,368 +1,127 @@
-# Processo Seletivo – Intensivo Maker | IoT
+Monitor de estoque Kanban Inteligente
 
-## Etapa Prática – Sistemas Embarcados
+1.Identificação do Candidato
+-Nome Completo: Victor Felipe Alves Pinto
+-GitHub: victorfelipecode
 
-Bem-vindo(a) à **etapa prática do processo seletivo para o Intensivo Maker | IoT**.
+2. Visão Geral
 
-Esta atividade tem como objetivo avaliar suas competências em **Sistemas Embarcados**, com foco em **organização de projeto, lógica de firmware e simulação de hardware**, a partir da aplicação prática dos conhecimentos adquiridos nos cursos EAD da etapa anterior.
+O presente projeto refere-se a um monitor de estoque voltados a almoxarifados e linhas de produção que utiliza o sistema Kanban. Na montagem foi utilizada uma placa Hx711 acoplada a um ESP32 que possibilita o monitoramento de peso na linha de montagem.
 
-> **Objetivo principal**  
-> Avaliar sua capacidade de **planejar, estruturar e desenvolver** uma solução funcional de sistemas embarcados, seguindo boas práticas de engenharia.
+Tal sistema de monitoramento faz a leitura de peso e que transita entre vazio, regular reabastecido e anomalia, emitindo alerta quando há transição entre os status aqui descritos. Eliminando a necessidade de inspeção manual e prevenindo paradas de linha por ausência de componentes.
 
----
+3. Da Arquitetura do sistema Iot
 
-## Antes de Tudo
+Para quesito de organização, foi separado três camadas:
 
-Se você **nunca utilizou Git ou GitHub**, não se preocupe.  
-Siga atentamente os passos abaixo.
+- Protocolo de leitura: É gerado 24 pulsos de clock lendo um bit por pulso, emite o 25º pulso de configuração de ganho e converte o resultado de complemento de dois. Perceba que a leitura é dado em valor bruto de informações.
 
----
+- Tratamento das informações e conversão em gramas: As informações obtidas em valor bruto são convertidos em gramas com base na proporção do sensor (0–2100 → 0–5000 g).
 
-### 1 - Criação de Conta no GitHub
+- Loop Principal: Aqui é definido o status da maquina (vazio, regular reabastecido e anomalia) e emitido a mensagem em log quando as informações transitam entre sí.
 
-1. Acesse: <https://github.com>
-2. Clique em **Sign up**
-3. Crie sua conta gratuita seguindo as instruções da plataforma
+4. Componentes Utilizados
 
-> O GitHub será utilizado para:
->
-> - Envio do seu projeto
-> - Versionamento do código
-> - Correção e validação automática via GitHub Actions
+- ESP32 DevKit C v4: Um Microcontrolador principal que executa o firmware Micropython.
 
----
+- Placa Hx711 (5 kg): Um Amplificador da célula de carga que fornece a leitura de peso.
 
-### 2 - Instalação do Git
+- Monitor serial: Reservado para saída de logs de status, alertas e telemetria.
 
-O **Git** é a ferramenta responsável pelo controle de versões do seu código.
+5. Decisões Técnicas relevantes
 
-### Windows
+- Escolha do cenário WEIGHT: menor risco de execução com base no tempo de entrega do projeto, dado que os demais projetos apresentavam uma leve complexidade a mais, como TEMPERATURE por exemplo que utiliza dois sensores em paralelo o que incide em duas condições de risco simultâneas.
 
-Baixe e instale o **Git Bash**:  
-<https://git-scm.com/downloads>
+- Arquitetura em três camadas: separação entre leitura, tratamento e decisão.
 
-### Linux / macOS
+- Arquitetura não bloqueante: uso de pausas curtas para evitar perda de eventos do simulador.
 
-Verifique se o Git já está instalado:
+- Temporização explícita no protocolo: garante estabilidade do sinal antes da leitura.
 
-```bash
-git --version
-```
+- Filtro de mediana com 7 amostras: reduz o impacto de leituras anômalas.
 
-> Caso não esteja, instale pelo gerenciador de pacotes do seu sistema.
+- Rejeição de valores impossíveis: descarta leituras fora da faixa física esperada do sensor.
 
-## Preparando o Ambiente
-
-Para desenvolver o desafio, você deverá criar uma cópia deste repositório no seu GitHub.
-
-### 1 - Fork do Repositório
-
-No canto superior direito desta página, clique em Fork
-
-<img width="219" height="45" alt="image" src="https://github.com/user-attachments/assets/5d629626-513a-445c-ba0f-e5bb3e225187" />
-
-Uma cópia do repositório será criada no seu perfil do GitHub
-
-> O Fork permite que você trabalhe de forma independente, sem alterar o repositório original do processo seletivo.
-
-### 2 - Clone do Repositório
-
-No repositório do seu Fork, clique em **<> Code**
-
-<img width="149" height="52" alt="image" src="https://github.com/user-attachments/assets/abbd331b-a005-4633-89c6-afd16acbe828" />
-
-Copie a URL e execute no terminal:
-
-```bash
-git clone https://github.com/SEU_USUARIO/nome-do-repositorio.git
-cd nome-do-repositorio
-```
-
-> O comando git clone cria uma cópia local do repositório para desenvolvimento.
-
-### 3 - Preparação do Ambiente de Execução
-
-Você pode executar o projeto de duas formas. Escolha apenas uma.
-
-#### Opção A – Ambiente Python Local
-
-**Requisitos:**
-
-- Python 3.10 ou 3.11
-- pip
-
-**Instale as dependências:**
-
-```bash
-pip install -r requirements.txt
-```
-
-#### Opção B – Dev Container (Recomendado)
-
-Este repositório inclui um Dev Container, garantindo um ambiente padronizado.
-
-**Requisitos:**
-
-- VS Code
-- Docker instalado
-- Extensão Dev Containers
-
-**Passos:**
-
-1. Abra o repositório no VS Code
-2. Clique em “Reopen in Container”
-3. Aguarde a criação automática do ambiente
-
-> Todas as dependências serão instaladas automaticamente.
-
-## Criando sua API Key do Wokwi
-
-A simulação do projeto será executada automaticamente via GitHub Actions, utilizando o Wokwi CLI.
-
-Para isso, você precisa gerar uma API Key.
-
-1. Acesse: <https://wokwi.com/dashboard/ci>
-2. Faça login (Google ou GitHub)
-3. Clique em Generate API Token
-4. Copie a chave gerada (exemplo: wokwi-xxxxxxxx)
-
-> Importante
-
-- Nunca faça commit dessa chave
-- Ela deve ser armazenada apenas como secret no GitHub
-
-## Configurando a API Key no GitHub (Secrets)
-
-**No repositório do seu Fork:**
-
-1. Vá em Settings
-2. Acesse Secrets and variables → Actions
-3. Clique em New repository secret
-4. Nome: WOKWI_API_KEY
-5. Valor: sua chave gerada
-6. Salve
-
-> As GitHub Actions do template já estão preparadas para usar essa variável automaticamente.
-
-## Desafio Técnico
-
-Você deverá desenvolver um projeto de sistemas embarcados simulados, utilizando Python e Wokwi.
-
-### Estrutura mínima esperada
-
-```text
-/project
- ├── src/
- │   └── main.py        # Código principal do projeto
- ├── wokwi.toml         # Configuração da simulação
- ├── diagram.json       # Circuito no Wokwi
- └── README.md          # Explicação do seu projeto
-```
-
-> Você pode expandir essa estrutura se desejar, desde que mantenha os arquivos essenciais.
-
-### Escolha do cenário
-
-No diretório "scenarios" existem arquivos .md e pastas referentes a diferentes desafios. Selecione apenas um deles e mantenha apenas a pasta e .md referente ao desafio a ser desenvolvido, deletando os demais. Isso fará com o que o fluxo de testes automáticos selecione o fluxo de acordo com o desafio escolhido.
-
-### Como Desenvolver seu Projeto
-
-O desenvolvimento acontece principalmente nos arquivos abaixo:
-
-#### src/main.py
-
-- Código Python executado na simulação
-- Implementa a lógica do sistema embarcado
-- Exemplos: controle de LEDs, leitura de sensores, estados, temporizações, etc.
-
-#### diagram.json
-
-- Define o hardware virtual do projeto
-- Componentes como:
-  - LEDs
-  - Botões
-  - Sensores
-  - Placa microcontroladora
-
-#### wokwi.toml
-
-- Configura a simulação:
-  - Tipo de placa
-  - Framework
-  - Dependências adicionais
+- Consenso de três leituras: exige confirmação antes de alterar o estado do sistema.
  
-#### Rodando localmente
+-Tratamento de ruídos e glitches: evita mudanças de estado causadas por erros isolados.
 
-Para executar o seu projeto locamente, é necesário preparar a imagem docker local, e após isso
-utiliza-la para gerar o arquivo que conterá o seu código para o projeto, para isso, execute os 
-seguintes códigos:
+-Interrupção do debug do sincronismo do sensor: priorização das entregas restantes diante da limitação de prazo.
 
-1. Prepara a imagem docker (Necessário rodar apenas 1 vez)
+- Registro da limitação: documentação transparente de que a lógica de negócio foi implementada, mas o sincronismo do HX711 no ambiente simulado não foi totalmente estabilizado.
 
-```bash
-docker build -t esp32-builder -f Dockerfile .
-```
+6. Resultados Obtidos
 
-2. Prepara o arquivo de memória fs.bin (Necessário a cada iteração)
+- Máquina de estados: implementada e validada em execuções com leituras estáveis.
 
-```bash
-docker run --rm -v "$(pwd)/src:/mnt/src" -v "$(pwd):/mnt/out" esp32-builder bash -c "mkdir -p /tmp/fs && cp -r /mnt/src/* /tmp/fs/ && /mklittlefs/mklittlefs -c /tmp/fs -b 4096 -p 256 -s 0x200000 /mnt/out/fs.bin"
-```
+- Testes isolados: os testes de Consumo Parcial e Anomalia (test_1 e test_3) passaram em determinadas execuções.
 
-#### Commit e Push
+- Comunicação serial: mensagens de status, alerta e reposição emitidas no formato exigido pelos testes automatizados.
 
-Após suas alterações:
 
-```bash
-git add .
-git commit -m "Descrição clara do que foi feito"
-git push
-```
+Limitações identificadas:
 
-### Execução Automática (GitHub Actions)
+-Sincronismo do HX711 no Wokwi: não foi completamente estabilizado.
 
-A cada push, o GitHub Actions irá automaticamente:
+- Problema observado: leituras ocasionalmente desalinhadas, com bits deslocados.
 
-- Executar o pipeline de build
-- Rodar a simulação via Wokwi CLI
-- Validar que o projeto executa sem erros
+- Efeito: oscilação indevida entre estados do sistema.
 
-### Caso algo falhe
+- Medidas aplicadas: filtro de mediana, rejeição de valores inválidos e confirmação por consenso de três leituras.
 
-- Vá até a aba Actions
-- Analise os logs da execução
-- Corrija e envie novamente
+- Resultado: as medidas reduziram os efeitos do problema, mas não garantiram estabilidade total.
 
-## Critérios de Avaliação
+- Testes automatizados: os três testes (test_1, test_2 e test_3) não passam de forma consistente na mesma execução; em algumas rodadas, dois dos três testes passam isoladamente.
 
-Esta etapa será avaliada considerando:
 
-- Funcionamento correto da simulação
-- Código organizado e legível
-- Estrutura de arquivos correta
-- Uso adequado do Wokwi
-- Commits claros e bem descritos
-- Projeto executando sem falhas nas Actions
+Conclusão técnica:
 
----
+-Arquitetura de software: correta e validada.
 
-## Submissão Final
+-Camadas de aquisição, tratamento e decisão: implementadas adequadamente.
 
-Após concluir o desenvolvimento:
+-Falha remanescente: restrita à sincronização de baixo nível entre o firmware e o HX711 simulado.
 
-1. Verifique se o projeto **executa sem erros** nas GitHub Actions
-2. Confirme que todos os arquivos obrigatórios estão presentes
-3. Copie o link do **seu repositório no GitHub**
+-Diagnóstico: o problema não está na lógica de negócio, mas na comunicação entre o firmware e o hardware simulado.
 
-Envie o link conforme as orientações do processo seletivo na plataforma do **PNAAT**.
+7. Comentários Adicionais:
 
----
+Dificuldades encontradas:
+A maior dificuldade encontrada no projeto foi o controle de tempo preciso de tempo em microssegundos nas leituras de dados, pelo qual pequenas variações de timing gerava leituras corrompidas na simulação do debug do protocolo de comunicação do HX711.
 
-## Relatório do Candidato
+Principais aprendizados:
+Aprendi na prática o protocolo de comunicação de um sensor de peso via GPIO, o conceito de máquina de estados aplicado a sistemas embarcados, e a importância de arquitetura não-bloqueante em firmware. Também aprendi, de forma mais ampla, a debugar problemas de hardware simulado a partir de apenas logs de CI — sem acesso a osciloscópio ou depuração visual em tempo real, isolando hipóteses uma de cada vez a partir do comportamento observado.
 
-O arquivo **`README.md` do seu repositório** deve ser utilizado como o  
-**relatório final do desafio técnico**.
+Melhorias com mais tempo: 
+investigaria o uso de uma biblioteca MicroPython já validada para o HX711, para isolar se o problema está na implementação própria do protocolo ou em uma particularidade do componente simulado. Também configuraria testes locais via Docker, reduzindo o tempo de ciclo entre cada tentativa de correção.
 
-Preencha todas as seções abaixo de forma **clara, objetiva e técnica**.
+8. Exemplo de Inferência
 
-> **Dica importante**  
-> Não é necessário um relatório extenso.  
-> O principal critério é demonstrar **clareza nas decisões técnicas**, organização e entendimento do sistema embarcado desenvolvido.
-> Não mantenha os demais conteúdos escritos nesse arquivo README, aqui devem ser concentradas apenas informações referentes ao projeto desenvolvido.
+Log da execução do teste automatizado "Teste de Anomalia - Caixa Removida ou
+Erro de Leitura" (GitHub Actions / Wokwi CI):
 
----
+Sistema Kanban Inicializado
+[Teste de Anomalia] Expected text matched: "Sistema Kanban Inicializado"
+[Teste de Anomalia] delay 1s
+Abastecimento concluído. Caixa cheia.
+ALERTA: Caixa ausente ou erro de calibração no sensor HX711!
+[Teste de Anomalia] Expected text matched: "ALERTA: Caixa ausente ou erro de
+calibração no sensor HX711!"
+[Teste de Anomalia] delay 500ms
+[Teste de Anomalia] Scenario completed successfully
 
-### Identificação do Candidato
+Comentário: este log confirma o cenário de anomalia executado com sucesso
+("Scenario completed successfully"). O firmware inicializa, detecta a caixa
+em carga máxima (transição para o estado "cheio") e, quando o simulador
+altera a leitura para zero, identifica corretamente a condição de anomalia,
+emitindo a mensagem exata esperada pelo teste.
 
-- **Nome completo:**
-- **GitHub:**
+O caso mais interessante observado foi justamente a diferença de
+comportamento entre execuções: o mesmo firmware que conclui este cenário
+com sucesso apresenta instabilidade em outras rodadas, o que reforça o
+diagnóstico de que a falha está no sincronismo da leitura do sensor, e não
+na lógica de classificação de estados.
 
----
 
-## Visão Geral da Solução
 
-Descreva, em poucas palavras:
-
-- Qual é o objetivo do seu projeto
-- O que o sistema embarcado simulado faz
-- Como o usuário interage com ele (se aplicável)
-
----
-
-## Arquitetura do Sistema Embarcado
-
-Explique a arquitetura lógica do seu projeto, abordando:
-
-- Fluxo principal do programa (`main.py`)
-- Estrutura de estados, loops ou temporizações
-- Como os componentes interagem entre si
-
-Se desejar, utilize tópicos ou um pequeno diagrama em texto.
-
----
-
-## Componentes Utilizados na Simulação
-
-Liste os principais componentes definidos no `diagram.json`, por exemplo:
-
-- Tipo de placa utilizada
-- LEDs, botões, sensores, atuadores, etc.
-- Função de cada componente no sistema
-
----
-
-## Decisões Técnicas Relevantes
-
-Explique brevemente decisões importantes tomadas durante o desenvolvimento, como:
-
-- Organização do código
-- Uso de funções, estados ou constantes
-- Estratégias para temporização ou controle lógico
-
----
-
-## Resultados Obtidos
-
-Descreva o comportamento final do sistema:
-
-- O que funciona corretamente
-- Quais requisitos foram atendidos
-- Resultado observado na simulação do Wokwi
-
----
-
-## Comentários Adicionais (Opcional)
-
-Utilize este espaço para comentar, se desejar:
-
-- Dificuldades encontradas
-- Limitações da solução
-- Melhorias que você faria com mais tempo
-- Principais aprendizados durante o desafio
-
----
-
-> Este relatório faz parte da avaliação técnica.  
-> Clareza, objetividade e organização são tão importantes quanto o funcionamento do código.
-
----
-
-## Especificação dos Testes Automatizados (Wokwi CI)
-
-Para que o projeto seja validado com sucesso na esteira de integração contínua (CI), o firmware escrito em MicroPython deve interagir corretamente com as leituras dos sensores descritos em cada cenário e enviar as mensagens de status exatas.
-
-### Requisitos Críticos de Implementação
-
-1. **Casamento Exato de Strings:** O Wokwi CI faz uma verificação estrita caractere por caractere. Se houver divergência em maiúsculas/minúsculas, acentuação ou falta de pontuação, o teste irá falhar.
-2. **Arquitetura Não-Bloqueante:** Evite o uso de funções bloqueantes. Elas podem fazer com que o firmware perca a janela de tempo em que o simulador altera o peso, quebrando a sincronia do teste automatizado.
-
----
-
-## Suporte
-
-Em caso de dúvidas:
-
-- Consulte o material dos cursos EAD
-- Leia atentamente este README
-- Analise os logs das GitHub Actions
-- Utilize os canais oficiais para contato com os instrutores
+ 
